@@ -1162,3 +1162,11 @@ summary:active {
     border-color: var(--ledger-ink);
   }
 }
+
+/* Pricing: the currency PayPal will actually charge in */
+.price-note {
+  margin: -6px 0 0;
+  color: var(--ledger-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}

@@ -118,7 +118,9 @@
 
         <section class="surface card-pad account-section" id="billing" aria-labelledby="billingHeading">
           <h2 class="card-title" id="billingHeading">Billing</h2>
-          <p class="card-copy">Billing isn't set up yet, so you aren't being charged. TradePulse is free while it's in early access. Planned plans and prices are on the <a href="pricing.html">Pricing page</a>.</p>
+          <div id="billingState" class="card-copy is-loading">Checking your subscription&hellip;</div>
+          <div id="billingPlans" class="billing-plans" hidden></div>
+          <p class="form-status" id="billingStatus" role="status"></p>
         </section>
 
         <section class="surface card-pad account-section" aria-labelledby="aiHeading">
@@ -257,6 +259,7 @@
   <script src="motion.js"></script>
   <script src="interactions.js"></script>
   <script src="dashboard.js"></script>
+  <script src="billing.js"></script>
   <script src="account.js"></script>
 </body>
 </html>

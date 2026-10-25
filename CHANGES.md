@@ -1,5 +1,34 @@
 # Changes
 
+## v26 (25 Oct 2026): PayPal subscriptions, in sandbox
+
+Billing exists now. It is off until the PayPal secrets are set, and while `PAYPAL_ENV` is `sandbox` the account page says "Test mode" on every screen that can take money.
+
+### The currency problem, stated plainly
+PayPal does not support ZAR. South African merchants receive into USD, EUR or GBP and withdraw to Rands through FNB. So the plans are charged in the currency their PayPal plan was created in (USD), and the pricing page now says so instead of implying R299 is what leaves your account. A South African provider for ZAR debit orders is a separate piece of work.
+
+### What was built
+- `subscriptions` and `billing_webhook_events` tables. `subscriptions` has a select policy and deliberately no insert, update or delete policy, so RLS denies writes to the browser outright and only the server can grant a plan. A forged request cannot buy itself a subscription.
+- `paypal-subscription` edge function: tells the browser which plans exist and what PayPal will charge (read from PayPal, so the page can't advertise a price PayPal won't honour), re-reads an approved subscription from PayPal before storing it, refreshes, and cancels.
+- `paypal-webhook` edge function: verifies every delivery through PayPal's own signature endpoint, records it by PayPal's event id before acting, and ignores anything that fails verification. PayPal retries on a non-2xx, so the event id is what stops a retry being applied twice.
+- Billing section on the account page: the real subscription state, the next payment date, the PayPal reference to quote to support, and cancellation.
+- `_headers` now allows paypal.com and paypalobjects.com, which the buttons need.
+
+### Honest states, not optimistic ones
+- Secrets not set: "payments aren't switched on", not an error and not a plan.
+- PayPal unreachable when checking: says the check failed and that nothing changed, rather than showing "not subscribed", which would be a lie that invites a double purchase.
+- A subscription already recorded against another account is refused rather than moved.
+- A PayPal state we don't recognise is recorded as unrecognised instead of being mapped to a guess.
+
+### Found by testing
+The PayPal SDK can return an empty body that still fires `onload` — which is what an ad or privacy blocker does, and they block paypal.com routinely. That threw an uncaught error and left the section broken. It now detects that the script loaded without starting, names the likely cause, and says you haven't been charged.
+
+### Still open
+Live mode needs a PayPal business account, the plans created in live, and the webhook registered against the production URL. The Desk plan is still "talk to sales" and has no PayPal plan behind it.
+
+### Testing
+40 unit tests, 73 end-to-end checks, 25 gesture checks, 9 bundle checks and 17 new billing checks pass.
+
 ## v25 (25 Oct 2026): only buttons look like buttons, and buttons are glass
 
 ### Nothing that isn't a control looks like one

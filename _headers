@@ -1,7 +1,13 @@
 # Security headers. Netlify and Cloudflare Pages read this file automatically.
 # For other hosts, set the same headers in the host's configuration.
+#
+# The paypal.com and paypalobjects.com entries are for the PayPal JS SDK on the
+# account page. PayPal also supports a per-response nonce (data-csp-nonce) for
+# stricter policies; that needs a server to generate one per request, which a
+# static host can't do. If a PayPal button ever fails to appear, the browser
+# console names the directive that blocked it.
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://qhcblapvvaatevxgeljo.supabase.co wss://qhcblapvvaatevxgeljo.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://*.paypal.com https://*.paypalobjects.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.paypal.com https://*.paypalobjects.com; connect-src 'self' https://qhcblapvvaatevxgeljo.supabase.co wss://qhcblapvvaatevxgeljo.supabase.co https://*.paypal.com; frame-src https://*.paypal.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin

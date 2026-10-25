@@ -2167,3 +2167,75 @@ button.breakdown-row:hover {
     border-radius: 22px 22px 0 0;
   }
 }
+
+/* ---------- Billing ---------- */
+.billing-plans {
+  margin-block-start: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.billing-plans[hidden] {
+  display: none;
+}
+
+.billing-plan {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-block: 12px;
+  border-block-start: 1px solid var(--ledger-line);
+}
+
+.billing-plan > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.billing-plan strong {
+  font-size: 0.9rem;
+}
+
+.billing-plan span {
+  color: var(--ledger-muted);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.billing-buttons {
+  min-width: 220px;
+  flex: 0 1 260px;
+}
+
+/* Test mode has to be unmissable: a sandbox payment is not a payment */
+.billing-sandbox {
+  margin: 0 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ledger-ink-soft);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.billing-sandbox::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: #d9a441;
+  flex-shrink: 0;
+}
+
+#billingState p {
+  margin: 0 0 6px;
+}
+
+.billing-ref {
+  color: var(--ledger-muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}

@@ -68,6 +68,36 @@ Anything a person can touch is animated with a spring from `motion.js`, never a 
 
 `supabase/functions/process-source` sends one file to Groq when the user asks. It needs a `GROQ_API_KEY` secret on the Supabase project (Settings > Edge Functions > Secrets). Without it, the app says AI reading isn't set up. Optional `GROQ_TEXT_MODEL` and `GROQ_VISION_MODEL` override the defaults.
 
+## Payments (PayPal subscriptions)
+
+PayPal has no ZAR. South African merchants receive into a USD, EUR or GBP balance and withdraw to Rands through FNB, so the plans are **charged in the currency the PayPal plan was created in** (USD), with the Rand price shown beside it as the listed price. A South African provider for ZAR debit orders is planned separately.
+
+Nothing is charged until the secrets below are set. Without them the account page says payments aren't switched on, which is the honest state, not an error.
+
+### Secrets (Supabase > Settings > Edge Functions > Secrets)
+
+| Secret | What it is |
+| --- | --- |
+| `PAYPAL_CLIENT_ID` | From the PayPal Developer dashboard. Public: it is sent to the browser. |
+| `PAYPAL_CLIENT_SECRET` | Server only. Never in the repo or the browser. |
+| `PAYPAL_ENV` | `sandbox` (default) or `live`. |
+| `PAYPAL_WEBHOOK_ID` | The id PayPal returns when you register the webhook URL. |
+| `PAYPAL_PLAN_STARTER` / `PAYPAL_PLAN_PRO` / `PAYPAL_PLAN_DESK` | Plan ids (`P-...`). Only the ones you set are offered. |
+
+A plan is fixed to one currency, so a second currency means a second plan.
+
+### How it fits together
+
+- `supabase/functions/paypal-subscription` — `config` tells the browser which plans exist and what PayPal will actually charge (read from PayPal, not from our own copy); `claim` re-reads an approved subscription from PayPal before storing it; `refresh` and `cancel` do what they say.
+- `supabase/functions/paypal-webhook` — PayPal's notifications. Deploy with `--no-verify-jwt`: PayPal is not a signed-in user, and authenticity comes from PayPal's own signature verification instead. Every delivery is recorded in `billing_webhook_events` by PayPal's event id before it is applied, so a retry can't apply the same event twice.
+- `billing.js` + the Billing section of `account.html` — the only place a subscription can be started or cancelled.
+
+The browser never decides entitlement. `subscriptions` has a select policy and no insert, update or delete policy, so RLS denies writes to the browser entirely and only the service role can grant a plan.
+
+### Testing in the sandbox
+
+Set `PAYPAL_ENV=sandbox` and use sandbox credentials. The account page labels itself "Test mode" whenever the environment is sandbox. Pay with a sandbox personal account; no real money moves.
+
 ## Deploying
 
-Any static host serves this folder. On Netlify or Cloudflare Pages, `_headers` is picked up automatically; elsewhere, copy those headers into the host's config. Update `connect-src` in `_headers` if the Supabase project changes.
+Any static host serves this folder. On Netlify or Cloudflare Pages, `_headers` is picked up automatically; elsewhere, copy those headers into the host's config. Update `connect-src` in `_headers` if the Supabase project changes. The `paypal.com` and `paypalobjects.com` entries there are what let the PayPal buttons load.
