@@ -26,6 +26,13 @@ const tpBilling = {
   config: null,
   sdkLoaded: false,
 
+  /** A status line is red by default, so good news has to say so explicitly. */
+  say(el, html, ok = false) {
+    if (!el) return;
+    el.classList.toggle("is-ok", Boolean(ok));
+    el.innerHTML = html;
+  },
+
   async call(body) {
     const { data, error } = await tpClient.functions.invoke("paypal-subscription", { body });
     if (error) {
@@ -125,17 +132,20 @@ async function tpRenderBilling() {
     plansEl.innerHTML = '<button class="button button-paper button-small" type="button" id="cancelSubscription">Cancel subscription</button>';
     document.getElementById("cancelSubscription").addEventListener("click", async () => {
       if (!window.confirm("Cancel this subscription at PayPal? You keep access until the end of the period you've paid for.")) return;
-      statusEl.textContent = "Cancelling…";
+      tpBilling.say(statusEl, "Cancelling…");
       try {
         await tpBilling.call({ action: "cancel" });
-        statusEl.textContent = "Cancelled at PayPal.";
+        tpBilling.say(statusEl, "Cancelled at PayPal.", true);
         tpRenderBilling();
       } catch (e) {
-        statusEl.textContent = e.message;
+        tpBilling.say(statusEl, e.message);
       }
     });
     return;
   }
+
+  // Cheapest first, so the ladder reads in the order someone climbs it.
+  config.plans = [...(config.plans || [])].sort((a, b) => Number(a.amount || 0) - Number(b.amount || 0));
 
   // ---- configured, but nothing to sell yet ----
   // The plans have to exist at PayPal before anyone can subscribe. Rather than
@@ -147,13 +157,14 @@ async function tpRenderBilling() {
     plansEl.innerHTML = '<button class="button button-paper button-small" type="button" id="setupPlans">Create the plans at PayPal</button>';
     document.getElementById("setupPlans").addEventListener("click", async (e) => {
       e.target.disabled = true;
-      statusEl.textContent = "Asking PayPal to create the product, plans and webhook\u2026";
+      tpBilling.say(statusEl, "Asking PayPal to create the product, plans and webhook\u2026");
       try {
         const result = await tpBilling.call({ action: "setup" });
-        statusEl.innerHTML = `<strong>${result.environment}</strong><br>${(result.done || []).join("<br>")}`;
+        const failed = (result.done || []).some((line) => /FAILED|NOT registered/.test(line));
+        tpBilling.say(statusEl, `<strong>${result.environment}</strong><br>${(result.done || []).join("<br>")}`, !failed);
         setTimeout(tpRenderBilling, 2500);
       } catch (err) {
-        statusEl.textContent = err.message;
+        tpBilling.say(statusEl, err.message);
         e.target.disabled = false;
       }
     });
@@ -180,7 +191,7 @@ async function tpRenderBilling() {
   } catch (e) {
     // Ad and tracker blockers block paypal.com routinely, so this is a state
     // the page has to handle, not an exception to let escape.
-    statusEl.textContent = `${e.message} A privacy blocker or extension is the usual cause. Allow paypal.com and reload. You haven't been charged.`;
+    tpBilling.say(statusEl, `${e.message} A privacy blocker or extension is the usual cause. Allow paypal.com and reload. You haven't been charged.`);
     plansEl.hidden = true;
     return;
   }
@@ -196,17 +207,17 @@ async function tpRenderBilling() {
           custom_id: tpBilling.userId || undefined,
         }),
         onApprove: async (data) => {
-          statusEl.textContent = "Confirming with PayPal…";
+          tpBilling.say(statusEl, "Confirming with PayPal…");
           try {
             await tpBilling.call({ action: "claim", subscription_id: data.subscriptionID });
-            statusEl.textContent = "Subscribed.";
+            tpBilling.say(statusEl, "Subscribed.", true);
             tpRenderBilling();
           } catch (e) {
-            statusEl.textContent = `${e.message} Your PayPal subscription id is ${data.subscriptionID} — keep it if you need support.`;
+            tpBilling.say(statusEl, `${e.message} Your PayPal subscription id is ${data.subscriptionID} — keep it if you need support.`);
           }
         },
         onError: () => {
-          statusEl.textContent = "PayPal reported a problem. Nothing was charged.";
+          tpBilling.say(statusEl, "PayPal reported a problem. Nothing was charged.");
         },
       }).render(`#paypal-${plan.code}`);
     } catch {

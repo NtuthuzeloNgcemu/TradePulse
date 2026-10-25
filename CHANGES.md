@@ -26,6 +26,9 @@ The first attempt had the owner creating the PayPal product, plans and webhook b
 - A PayPal state we don't recognise is recorded as unrecognised rather than mapped to a guess.
 
 ### Found while building
+- Every status line in the Billing section is red by default (the shared `.form-status` colour), so a successful setup was reported in the error colour. Success now says it is success.
+- The plans came back in whatever order the database returned them, which put Pro above Starter. They are sorted cheapest first.
+
 - The PayPal SDK can fire `onload` with an empty body, which is what an ad or privacy blocker does. That threw an uncaught error and left billing broken. It now detects it, names the likely cause, and says you haven't been charged.
 - A parent-directory import does not survive edge-function deployment, so the shared PayPal helper is a copy inside each function, with a header saying to keep them identical.
 - The security advisor caught the `updated_at` trigger function being callable directly over REST. Execute is now revoked from `anon` and `authenticated`.
