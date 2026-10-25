@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analytics | TradePulse</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="assets/brand/logo-transparent.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body class="app-body">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <div class="cookie-banner hidden" id="cookieBanner" role="region" aria-label="Cookie notice">
+    <p>TradePulse only stores what it needs to keep you signed in and remember your choices. There are no advertising or tracking cookies. Read our <a href="cookies.html">Cookie Policy</a>.</p>
+    <div class="cookie-actions">
+      <button class="button button-ink button-small" id="cookieAccept" type="button">OK</button>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <aside class="sidebar" id="appSidebar" aria-label="TradePulse navigation">
+      <div class="sidebar-top">
+        <a class="brand" href="dashboard.html">
+          <img src="assets/brand/logo-transparent.png" alt="" width="30" height="30" />
+          <span>TradePulse</span>
+        </a>
+        <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-controls="appSidebar" aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar">&lsaquo;</button>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Workspace">
+        <div class="nav-label" aria-hidden="true">Workspace</div>
+        <a class="side-link" href="dashboard.html">
+          <span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" /></svg></span>
+          <span class="side-label">Overview</span>
+        </a>
+        <a class="side-link" href="journal.html">
+          <span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z" /><path d="M15 3v4h4M9 12h6M9 16h6" /></svg></span>
+          <span class="side-label">Journal</span>
+        </a>
+        <a class="side-link active" href="analytics.html" aria-current="page">
+          <span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16" /><path d="M8 15l3-4 3 2 5-7" /></svg></span>
+          <span class="side-label">Analytics</span>
+        </a>
+        <a class="side-link" href="insights.html">
+          <span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" /><path d="M12 8v8M8 12h8" /></svg></span>
+          <span class="side-label">Insights</span>
+        </a>
+        <a class="side-link" href="playbook.html">
+          <span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h10a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4z" /><path d="M9 4v16M12 8h4M12 12h4" /></svg></span>
+          <span class="side-label">Playbook</span>
+        </a>
+      </nav>
+    </aside>
+
+    <div class="app-content">
+      <header class="app-header">
+        <div class="header-left">
+          <button class="mobile-menu" id="mobileMenu" type="button" aria-controls="appSidebar" aria-expanded="false" aria-label="Open navigation">&#9776;</button>
+          <span class="header-title">Analytics</span>
+        </div>
+        <div class="header-actions">
+          <button class="add-button" id="addButton" type="button" aria-label="Add to TradePulse">+<span class="add-button-label"> Add to TradePulse</span></button>
+          <div class="profile-wrap">
+            <button class="profile-button" id="profileButton" type="button" aria-controls="profileMenu" aria-expanded="false" aria-label="Open profile menu">&middot;</button>
+            <div class="profile-menu" id="profileMenu" hidden>
+              <div class="profile-menu-identity" id="profileIdentity" hidden>
+                <strong id="profileIdentityName"></strong>
+                <span id="profileIdentityEmail"></span>
+              </div>
+              <a href="account.html">Account settings</a>
+              <a href="account.html#billing">Billing</a>
+              <a class="danger" href="index.html" id="logoutLink">Log out</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="page" id="main" data-page="analytics">
+        <div class="page-heading">
+          <div>
+            <h1>Measure what actually happened.</h1>
+            <p class="lede">Calculated from the trades in your journal that have a result in R. Every number shows how many trades it's based on, and you can open the trades behind it.</p>
+          </div>
+          <div class="period-control" id="periodControl">No data yet</div>
+        </div>
+
+        <div class="stat-grid">
+          <article class="surface stat">
+            <span>Performance</span>
+            <strong id="analyticsPerformanceStat">Awaiting data</strong>
+            <small id="analyticsPerformanceDetail">No verified trades.</small>
+          </article>
+          <article class="surface stat">
+            <span>Risk</span>
+            <strong id="analyticsRiskStat">Awaiting data</strong>
+            <small id="analyticsRiskDetail">No verified risk records.</small>
+          </article>
+          <article class="surface stat">
+            <span>Behaviour</span>
+            <strong id="analyticsBehaviourStat">Awaiting data</strong>
+            <small id="analyticsBehaviourDetail">No evidence to compare.</small>
+          </article>
+        </div>
+
+        <section class="surface empty analytics-empty" id="analyticsEmpty">
+          <h2>Analytics appear when you have trades with a result in R.</h2>
+          <p>Import or enter trades, and this page will calculate performance, risk, rule adherence and breakdowns by setup, session, instrument and direction.</p>
+          <button class="add-button" id="analyticsAdd" type="button">Add trading data</button>
+        </section>
+
+        <div class="analytics-detail" id="analyticsDetail"></div>
+      </main>
+    </div>
+  </div>
+
+  <div class="upload-modal" id="uploadModal" hidden>
+    <div class="backdrop" data-close="true"></div>
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="uploadTitle" tabindex="-1">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <button class="close" id="closeModal" type="button" aria-label="Close">&times;</button>
+      <h2 id="uploadTitle">Bring your trading information in.</h2>
+      <p>CSV trade files are checked row by row. PDFs, screenshots and text notes can be read with AI when you choose to. Nothing is added to your journal until you confirm.</p>
+      <div class="drop-zone" id="dropZone" tabindex="0" role="button" aria-label="Choose files to upload">
+        <div>
+          <strong>Drop files here or choose files</strong>
+          <span>CSV: imported after review. PDF, PNG, JPG, TXT: can be read with AI. XLSX, DOCX: stored, not processed yet. Up to 25 MB each.</span>
+        </div>
+        <input type="file" id="fileInput" hidden multiple accept=".csv,.xlsx,.xls,.pdf,.png,.jpg,.jpeg,.txt,.doc,.docx" />
+      </div>
+      <div class="file-result" id="fileResult" hidden aria-live="polite"></div>
+
+      <div class="review-section" id="reviewSection" hidden>
+        <div class="review-summary" id="reviewSummary"></div>
+        <div class="review-preview" id="reviewPreview"></div>
+        <div class="review-include-wrap" id="reviewIncludeWrap" hidden></div>
+        <div class="review-actions">
+          <button class="button button-paper" type="button" id="reviewCancel">Not now</button>
+          <button class="button button-ink" type="button" id="reviewConfirm">Add trades to Journal</button>
+        </div>
+      </div>
+
+      <div class="manual-entry-toggle" id="manualEntryToggle">
+        <button class="link-button" type="button" id="showManualEntry">Or enter a trade manually</button>
+      </div>
+
+      <form class="manual-entry-form" id="manualEntryForm" hidden novalidate>
+        <div class="form-row">
+          <div class="field-group">
+            <label for="tradeInstrument">Instrument</label>
+            <input type="text" id="tradeInstrument" name="instrument" placeholder="EUR/USD" required />
+          </div>
+          <div class="field-group">
+            <label for="tradeDirection">Direction</label>
+            <select id="tradeDirection" name="direction">
+              <option value="">Not specified</option>
+              <option value="long">Long</option>
+              <option value="short">Short</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field-group">
+            <label for="tradeEntryTime">Entry time</label>
+            <input type="datetime-local" id="tradeEntryTime" name="entry_time" />
+          </div>
+          <div class="field-group">
+            <label for="tradeExitTime">Exit time</label>
+            <input type="datetime-local" id="tradeExitTime" name="exit_time" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field-group">
+            <label for="tradeSession">Session</label>
+            <input type="text" id="tradeSession" name="session" placeholder="London" />
+          </div>
+          <div class="field-group">
+            <label for="tradeSetup">Setup</label>
+            <input type="text" id="tradeSetup" name="setup" placeholder="Continuation" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field-group">
+            <label for="tradeEntryPrice">Entry price</label>
+            <input type="number" step="any" id="tradeEntryPrice" name="entry_price" placeholder="1.0850" />
+          </div>
+          <div class="field-group">
+            <label for="tradeExitPrice">Exit price</label>
+            <input type="number" step="any" id="tradeExitPrice" name="exit_price" placeholder="1.0872" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field-group">
+            <label for="tradeResultR">Result (R)</label>
+            <input type="number" step="any" id="tradeResultR" name="result_r" placeholder="2.1" required />
+          </div>
+          <div class="field-group">
+            <label for="tradeRuleScore">Rule score</label>
+            <input type="text" id="tradeRuleScore" name="rule_score" placeholder="4/4" />
+          </div>
+        </div>
+        <div class="field-group">
+          <label for="tradeEmotion">Emotion</label>
+          <input type="text" id="tradeEmotion" name="emotion" placeholder="Calm, confident" />
+        </div>
+        <div class="field-group">
+          <label for="tradeNotes">Notes</label>
+          <textarea id="tradeNotes" name="notes" rows="3" placeholder="What happened, what you would repeat"></textarea>
+        </div>
+        <span class="field-error" id="manualEntryError" role="alert"></span>
+        <div class="review-actions">
+          <button class="button button-paper" type="button" id="manualEntryCancel">Cancel</button>
+          <button class="button button-ink" type="submit" id="manualEntrySubmit">Add trade</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="vendor/supabase-js-2.117.3.js"></script>
+  <script src="vendor/papaparse-5.4.1.min.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="cookie-consent.js"></script>
+  <script src="trade-parser.js"></script>
+  <script src="analytics.js"></script>
+  <script src="motion.js"></script>
+  <script src="interactions.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="analytics-page.js"></script>
+</body>
+</html>

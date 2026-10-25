@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log in - TradePulse</title>
+  <meta name="description" content="Log in to your TradePulse trading journal." />
+  <meta name="theme-color" content="#091711" />
+  <link rel="canonical" href="https://tradepulse.app/login.html" />
+  <link rel="icon" type="image/png" href="assets/brand/logo-transparent.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth.css" />
+</head>
+<body class="auth-body">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <div class="cookie-banner hidden" id="cookieBanner" role="region" aria-label="Cookie notice">
+    <p>TradePulse only stores what it needs to keep you signed in and remember your choices. There are no advertising or tracking cookies. Read our <a href="cookies.html">Cookie Policy</a>.</p>
+    <div class="cookie-actions">
+      <button class="button button-ink button-small" id="cookieAccept" type="button">OK</button>
+    </div>
+  </div>
+
+  <div class="auth-shell">
+
+    <!-- Quote panel -->
+    <aside class="auth-quote-panel" aria-label="Trader quote">
+      <div class="auth-quote-panel-inner">
+
+        <a class="brand auth-brand" href="index.html" aria-label="TradePulse home">
+          <img src="assets/brand/logo-transparent.png" alt="" width="34" height="34" />
+          <span>TradePulse</span>
+        </a>
+
+        <div class="quote-carousel" id="quoteCarousel" aria-live="polite" aria-atomic="true">
+          <blockquote class="quote-block" data-index="0">
+            <p>The goal of a successful trader is to make the best trades. Money is secondary.</p>
+            <footer>
+              <strong>Alexander Elder</strong>
+              <span>Author, Trading for a Living</span>
+            </footer>
+          </blockquote>
+          <blockquote class="quote-block" data-index="1" hidden>
+            <p>It is not whether you are right or wrong that matters, but how much you make when you are right and how much you lose when you are wrong.</p>
+            <footer>
+              <strong>George Soros</strong>
+              <span>Founder, Soros Fund Management</span>
+            </footer>
+          </blockquote>
+          <blockquote class="quote-block" data-index="2" hidden>
+            <p>The most important thing in making money is not letting your losses get out of hand.</p>
+            <footer>
+              <strong>Martin Schwartz</strong>
+              <span>Wall Street trader, Pit Bull</span>
+            </footer>
+          </blockquote>
+          <blockquote class="quote-block" data-index="3" hidden>
+            <p>Risk comes from not knowing what you are doing.</p>
+            <footer>
+              <strong>Warren Buffett</strong>
+              <span>Chairman, Berkshire Hathaway</span>
+            </footer>
+          </blockquote>
+          <blockquote class="quote-block" data-index="4" hidden>
+            <p>I always define my risk, and then I do not have to worry about it.</p>
+            <footer>
+              <strong>Tony Saliba</strong>
+              <span>Market Wizards trader</span>
+            </footer>
+          </blockquote>
+          <blockquote class="quote-block" data-index="5" hidden>
+            <p>The key to trading success is emotional discipline. If intelligence were the key, there would be a lot more people making money trading.</p>
+            <footer>
+              <strong>Victor Sperandeo</strong>
+              <span>Trader Vic</span>
+            </footer>
+          </blockquote>
+        </div>
+
+        <div class="quote-dots" id="quoteDots" aria-label="Quote navigation"></div>
+
+      </div>
+    </aside>
+
+    <!-- Form panel -->
+    <main id="main" class="auth-form-panel">
+      <div class="auth-form-inner">
+
+        <a class="auth-back" href="index.html">&larr; Back to home</a>
+
+        <div class="auth-form-header">
+          <h1>Welcome back</h1>
+          <p>Log in to your trading journal.</p>
+        </div>
+
+        <form class="auth-form" id="loginForm" novalidate>
+          <div class="field-group">
+            <label for="email">Email address</label>
+            <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com" required />
+            <span class="field-error" id="emailError" role="alert"></span>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label-row">
+              <label for="password">Password</label>
+              <button type="button" class="forgot-link" id="forgotToggle" aria-expanded="false" aria-controls="resetRequestForm">Forgot password?</button>
+            </div>
+            <div class="input-wrap">
+              <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Enter your password" required />
+              <button type="button" class="toggle-pw" aria-label="Show password" data-target="password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <span class="field-error" id="passwordError" role="alert"></span>
+          </div>
+
+          <span class="field-error" id="loginFormError" role="alert"></span>
+
+          <button type="submit" class="button button-ink auth-submit">Log in</button>
+        </form>
+
+        <form class="auth-form auth-reset-request" id="resetRequestForm" hidden novalidate>
+          <p class="auth-reset-copy">Enter your email and we'll send you a link to set a new password.</p>
+          <div class="field-group">
+            <label for="resetEmail">Email address</label>
+            <input type="email" id="resetEmail" autocomplete="email" placeholder="you@example.com" />
+            <span class="field-error" id="resetEmailError" role="alert"></span>
+          </div>
+          <p class="auth-reset-status" id="resetStatus" role="status"></p>
+          <button type="submit" class="button button-paper auth-submit">Send reset link</button>
+        </form>
+
+
+        <p class="auth-switch">Don&apos;t have an account? <a href="register.html">Create an account</a></p>
+        <p class="auth-legal">By logging in you agree to our <a href="terms.html">Terms of Service</a> and <a href="privacy.html">Privacy Policy</a>.</p>
+
+      </div>
+    </main>
+
+  </div>
+
+  <script src="vendor/supabase-js-2.117.3.js"></script>
+  <script src="motion.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="auth.js"></script>
+  <script src="cookie-consent.js"></script>
+</body>
+</html>

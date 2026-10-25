@@ -1,0 +1,11 @@
+{
+  "name": "tradepulse",
+  "private": true,
+  "description": "TradePulse static site. No build step; package.json exists only to run tests (Node 22.6+).",
+  "scripts": {
+    "test": "node --experimental-strip-types --no-warnings --test tests/*.test.js tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "papaparse": "5.4.1"
+  }
+}

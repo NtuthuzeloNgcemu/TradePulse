@@ -1,0 +1,4 @@
+Instrument,Session,Setup,Date,Direction,R,Rule score
+EURUSD,London,Breakout,2026-03-04 10:15,Buy,+1.5R,4/4
+GBPUSD,New York,Pullback,2026-03-05T14:00:00Z,sell,-1R,3/4
+XAUUSD,Asia,Range,2026.03.06 02:30:00,long,0,4/4

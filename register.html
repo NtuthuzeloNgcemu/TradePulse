@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Start your free trial - TradePulse</title>
+  <meta name="description" content="Create your TradePulse account and start your 14 day free trial. No credit card required." />
+  <meta name="theme-color" content="#091711" />
+  <link rel="canonical" href="https://tradepulse.app/register.html" />
+  <link rel="icon" type="image/png" href="assets/brand/logo-transparent.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth.css" />
+</head>
+<body class="auth-body">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <div class="cookie-banner hidden" id="cookieBanner" role="region" aria-label="Cookie notice">
+    <p>TradePulse only stores what it needs to keep you signed in and remember your choices. There are no advertising or tracking cookies. Read our <a href="cookies.html">Cookie Policy</a>.</p>
+    <div class="cookie-actions">
+      <button class="button button-ink button-small" id="cookieAccept" type="button">OK</button>
+    </div>
+  </div>
+
+  <div class="auth-shell">
+
+    <!-- Quote panel -->
+    <aside class="auth-quote-panel" aria-label="Trader quote">
+      <div class="auth-quote-panel-inner">
+
+        <a class="brand auth-brand" href="index.html" aria-label="TradePulse home">
+          <img src="assets/brand/logo-transparent.png" alt="" width="34" height="34" />
+          <span>TradePulse</span>
+        </a>
+
+        <div class="quote-carousel" id="quoteCarousel" aria-live="polite" aria-atomic="true">
+          <blockquote class="quote-block" data-index="0">
+            <p>An investment in knowledge pays the best interest.</p>
+            <footer>
+              <strong>Benjamin Franklin</strong>
+              <span>Writer, scientist and statesman</span>
+            </footer>
+          </blockquote>
+          <blockquote class="quote-block" data-index="1" hidden>
+            <p>The stock market is filled with individuals who know the price of everything, but the value of nothing.</p>
+            <footer>
+              <strong>Philip Fisher</strong>
+              <span>Author, Common Stocks and Uncommon Profits</span>
+            </footer>
+          </blockquote>
+          <blockquote class="quote-block" data-index="2" hidden>
+            <p>In trading you have to be defensive and aggressive at the same time. If you are not aggressive, you are not going to make money, and if you are not defensive, you are not going to keep money.</p>
+            <footer>
+              <strong>Ray Dalio</strong>
+              <span>Founder, Bridgewater Associates</span>
+            </footer>
+          </blockquote>
+          <blockquote class="quote-block" data-index="3" hidden>
+            <p>The elements of good trading are cutting losses, cutting losses, and cutting losses.</p>
+            <footer>
+              <strong>Ed Seykota</strong>
+              <span>Market Wizards pioneer</span>
+            </footer>
+          </blockquote>
+          <blockquote class="quote-block" data-index="4" hidden>
+            <p>Trade what you see, not what you think.</p>
+            <footer>
+              <strong>Linda Bradford Raschke</strong>
+              <span>Professional trader, LBR Group</span>
+            </footer>
+          </blockquote>
+          <blockquote class="quote-block" data-index="5" hidden>
+            <p>Losing a position is aggravating, whereas losing your nerve is catastrophic.</p>
+            <footer>
+              <strong>Bruce Kovner</strong>
+              <span>Founder, Caxton Associates</span>
+            </footer>
+          </blockquote>
+        </div>
+
+        <div class="quote-dots" id="quoteDots" aria-label="Quote navigation"></div>
+
+      </div>
+    </aside>
+
+    <!-- Form panel -->
+    <main id="main" class="auth-form-panel">
+      <div class="auth-form-inner">
+
+        <a class="auth-back" href="index.html">&larr; Back to home</a>
+
+        <div id="registerFormWrap">
+
+        <div class="auth-form-header" id="authFormHeader">
+          <h1>Start your journal</h1>
+          <p>Create your account and start logging trades today.</p>
+        </div>
+
+        <form class="auth-form" id="registerForm" novalidate>
+          <div class="field-row">
+            <div class="field-group">
+              <label for="firstName">First name</label>
+              <input type="text" id="firstName" name="firstName" autocomplete="given-name" placeholder="Alex" required />
+              <span class="field-error" id="firstNameError" role="alert"></span>
+            </div>
+            <div class="field-group">
+              <label for="lastName">Last name</label>
+              <input type="text" id="lastName" name="lastName" autocomplete="family-name" placeholder="Morgan" />
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="email">Email address</label>
+            <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com" required />
+            <span class="field-error" id="emailError" role="alert"></span>
+          </div>
+
+          <div class="field-group">
+            <label for="password">Password</label>
+            <div class="input-wrap">
+              <input type="password" id="password" name="password" autocomplete="new-password" placeholder="At least 8 characters" required minlength="8" />
+              <button type="button" class="toggle-pw" aria-label="Show password" data-target="password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <div class="password-strength" id="pwStrength" aria-live="polite"></div>
+            <span class="field-error" id="passwordError" role="alert"></span>
+          </div>
+
+          <div class="field-group">
+            <label for="traderType">I primarily trade</label>
+            <select id="traderType" name="traderType">
+              <option value="">Select your market</option>
+              <option value="forex">Forex</option>
+              <option value="equities">Equities / Stocks</option>
+              <option value="futures">Futures</option>
+              <option value="crypto">Crypto</option>
+              <option value="options">Options</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div class="field-checkbox">
+            <input type="checkbox" id="terms" name="terms" required />
+            <label for="terms">I agree to the <a href="terms.html">Terms of Service</a> and <a href="privacy.html">Privacy Policy</a></label>
+          </div>
+          <span class="field-error" id="termsError" role="alert"></span>
+          <span class="field-error" id="registerFormError" role="alert"></span>
+
+          <button type="submit" class="button button-ink auth-submit">Create account</button>
+        </form>
+
+
+        <p class="auth-switch">Already have an account? <a href="login.html">Log in</a></p>
+
+        </div>
+
+        <div class="auth-confirm-notice" id="confirmEmailNotice" hidden>
+          <h1>Check your email</h1>
+          <p>We sent a confirmation link to <strong id="confirmEmailAddress"></strong>. Click it to activate your account, then log in below.</p>
+          <a class="button button-ink auth-submit" href="login.html">Go to log in</a>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+
+  <script src="vendor/supabase-js-2.117.3.js"></script>
+  <script src="motion.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="auth.js"></script>
+  <script src="cookie-consent.js"></script>
+</body>
+</html>
