@@ -81,10 +81,20 @@ Nothing is charged until the secrets below are set. Without them the account pag
 | `PAYPAL_CLIENT_ID` | From the PayPal Developer dashboard. Public: it is sent to the browser. |
 | `PAYPAL_CLIENT_SECRET` | Server only. Never in the repo or the browser. |
 | `PAYPAL_ENV` | `sandbox` (default) or `live`. |
-| `PAYPAL_WEBHOOK_ID` | The id PayPal returns when you register the webhook URL. |
-| `PAYPAL_PLAN_STARTER` / `PAYPAL_PLAN_PRO` / `PAYPAL_PLAN_DESK` | Plan ids (`P-...`). Only the ones you set are offered. |
+| `PAYPAL_SETUP_EMAIL` | The one account allowed to create plans from the app. |
 
-A plan is fixed to one currency, so a second currency means a second plan.
+That is all. The PayPal product, the plans and the webhook are **created by the
+app itself**: sign in as `PAYPAL_SETUP_EMAIL`, open Account > Billing and press
+"Create the plans at PayPal". Their ids are stored in `billing_plans` and
+`billing_provider_settings`, not in secrets, so no terminal is needed and there
+is nothing to copy by hand.
+
+Setup is safe to run twice: an existing product, plan or webhook is reused and
+reported, never replaced. A plan's price is fixed by PayPal once created, so
+changing a price means creating a new plan.
+
+`PAYPAL_WEBHOOK_ID` is still read if set, as an override for a webhook that was
+registered by hand.
 
 ### How it fits together
 

@@ -1,33 +1,40 @@
 # Changes
 
-## v26 (25 Oct 2026): PayPal subscriptions, in sandbox
+## v26 (25 Oct 2026): PayPal subscriptions, in sandbox, set up without a terminal
 
-Billing exists now. It is off until the PayPal secrets are set, and while `PAYPAL_ENV` is `sandbox` the account page says "Test mode" on every screen that can take money.
+Billing exists and is deployed. It is off until the PayPal secrets are set, and while `PAYPAL_ENV` is `sandbox` the account page says "Test mode" wherever money could move.
 
 ### The currency problem, stated plainly
-PayPal does not support ZAR. South African merchants receive into USD, EUR or GBP and withdraw to Rands through FNB. So the plans are charged in the currency their PayPal plan was created in (USD), and the pricing page now says so instead of implying R299 is what leaves your account. A South African provider for ZAR debit orders is a separate piece of work.
+PayPal does not support ZAR. South African merchants receive into USD, EUR or GBP and withdraw to Rands through FNB. So plans are charged in the currency their PayPal plan was created in (USD), and the pricing page now says so rather than implying R299 is what leaves your account. Stripe is not an option either: South Africa is in Stripe's "extended network", and Stripe's own country page sends it to Paystack. A ZAR provider is separate work and needs a registered company.
 
-### What was built
-- `subscriptions` and `billing_webhook_events` tables. `subscriptions` has a select policy and deliberately no insert, update or delete policy, so RLS denies writes to the browser outright and only the server can grant a plan. A forged request cannot buy itself a subscription.
-- `paypal-subscription` edge function: tells the browser which plans exist and what PayPal will charge (read from PayPal, so the page can't advertise a price PayPal won't honour), re-reads an approved subscription from PayPal before storing it, refreshes, and cancels.
-- `paypal-webhook` edge function: verifies every delivery through PayPal's own signature endpoint, records it by PayPal's event id before acting, and ignores anything that fails verification. PayPal retries on a non-2xx, so the event id is what stops a retry being applied twice.
-- Billing section on the account page: the real subscription state, the next payment date, the PayPal reference to quote to support, and cancellation.
-- `_headers` now allows paypal.com and paypalobjects.com, which the buttons need.
+### Set up from the app, not a terminal
+The first attempt had the owner creating the PayPal product, plans and webhook by hand with API calls. That is a lot of work to get wrong, so the app does it instead: sign in as `PAYPAL_SETUP_EMAIL`, open Account > Billing, press "Create the plans at PayPal". Four secrets, no commands.
+- Plan ids and the webhook id live in `billing_plans` and `billing_provider_settings` rather than in secrets, so there is nothing to copy by hand.
+- Running setup twice reuses what exists and says so. A plan's price is fixed by PayPal once created, so an existing plan is never silently replaced.
+- Only the account named in `PAYPAL_SETUP_EMAIL` may run it; anyone else is refused.
+
+### Entitlement is decided by the server
+`subscriptions` has a select policy and deliberately no insert, update or delete policy, so RLS denies writes to the browser outright. Verified on the live database: `authenticated` has no insert or update on it, and the three server-only billing tables grant nothing to `anon` or `authenticated` at all. A forged request cannot buy itself a subscription.
+
+- `paypal-subscription`: tells the browser which plans exist and what PayPal will charge, re-reads an approved subscription from PayPal before storing it, refreshes, cancels, and runs setup.
+- `paypal-webhook`: verifies every delivery through PayPal's signature endpoint and records it by PayPal's event id before acting, so a retry can't be applied twice. Deployed without JWT verification, because PayPal is not a signed-in user.
 
 ### Honest states, not optimistic ones
-- Secrets not set: "payments aren't switched on", not an error and not a plan.
-- PayPal unreachable when checking: says the check failed and that nothing changed, rather than showing "not subscribed", which would be a lie that invites a double purchase.
-- A subscription already recorded against another account is refused rather than moved.
-- A PayPal state we don't recognise is recorded as unrecognised instead of being mapped to a guess.
+- Secrets not set: "payments aren't switched on". Set but no plans: says exactly that, and offers to create them.
+- PayPal unreachable when checking: says the check failed and nothing changed, rather than "not subscribed", which would invite a double purchase.
+- A subscription already recorded against another account is refused, not moved.
+- A PayPal state we don't recognise is recorded as unrecognised rather than mapped to a guess.
 
-### Found by testing
-The PayPal SDK can return an empty body that still fires `onload` — which is what an ad or privacy blocker does, and they block paypal.com routinely. That threw an uncaught error and left the section broken. It now detects that the script loaded without starting, names the likely cause, and says you haven't been charged.
+### Found while building
+- The PayPal SDK can fire `onload` with an empty body, which is what an ad or privacy blocker does. That threw an uncaught error and left billing broken. It now detects it, names the likely cause, and says you haven't been charged.
+- A parent-directory import does not survive edge-function deployment, so the shared PayPal helper is a copy inside each function, with a header saying to keep them identical.
+- The security advisor caught the `updated_at` trigger function being callable directly over REST. Execute is now revoked from `anon` and `authenticated`.
 
 ### Still open
-Live mode needs a PayPal business account, the plans created in live, and the webhook registered against the production URL. The Desk plan is still "talk to sales" and has no PayPal plan behind it.
+Live mode needs a PayPal business account and `PAYPAL_ENV=live`, which creates a fresh set of live plans. The Desk plan is still "talk to sales". Leaked-password protection is still off in Supabase Auth.
 
 ### Testing
-40 unit tests, 73 end-to-end checks, 25 gesture checks, 9 bundle checks and 17 new billing checks pass.
+40 unit tests, 73 end-to-end checks, 29 gesture checks and 28 billing checks pass.
 
 ## v25 (25 Oct 2026): only buttons look like buttons, and buttons are glass
 

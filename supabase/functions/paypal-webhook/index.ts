@@ -9,7 +9,7 @@
 // again; the unique key is what stops it being applied twice.
 
 import { createClient } from "npm:@supabase/supabase-js@2.117.3";
-import { mapStatus, paypalFetch } from "../_shared/paypal.ts";
+import { mapStatus, paypalFetch, setting } from "./paypal.ts";
 
 const ok = (note: string) => new Response(JSON.stringify({ ok: true, note }), {
   status: 200,
@@ -58,12 +58,14 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (seen?.handled) return ok("already handled");
 
-  const webhookId = Deno.env.get("PAYPAL_WEBHOOK_ID");
+  // The webhook id is whatever "setup" registered, with the secret as an
+  // override for a webhook registered by hand.
+  const webhookId = Deno.env.get("PAYPAL_WEBHOOK_ID") || (await setting(admin, "webhook_id"));
   let verification: "verified" | "rejected" = "rejected";
   let note = "";
 
   if (!webhookId) {
-    note = "PAYPAL_WEBHOOK_ID is not set, so this delivery could not be verified.";
+    note = "No webhook id is on record, so this delivery could not be verified.";
   } else {
     try {
       const res = await paypalFetch("/v1/notifications/verify-webhook-signature", {

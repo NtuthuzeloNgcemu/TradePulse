@@ -88,3 +88,43 @@ $$;
 create trigger subscriptions_touch_updated_at
   before update on public.subscriptions
   for each row execute function public.touch_subscription_updated_at();
+
+
+-- The PayPal plans and settings the app created for itself. Kept in the
+-- database rather than in secrets so that setting payments up is a few form
+-- fields and not a terminal session: the app creates its own plans and
+-- remembers them here.
+--
+-- Nothing here is secret (a plan id is public), but there is no reason for a
+-- browser to read it directly, so both tables are server-only.
+
+create table public.billing_plans (
+  id uuid primary key default gen_random_uuid(),
+  provider text not null default 'paypal',
+  environment text not null check (environment in ('sandbox', 'live')),
+  plan_code text not null check (plan_code in ('starter', 'pro', 'desk')),
+  provider_product_id text,
+  provider_plan_id text not null,
+  amount numeric,
+  currency text,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+
+  unique (provider, environment, plan_code)
+);
+
+alter table public.billing_plans enable row level security;
+revoke all on public.billing_plans from anon, authenticated;
+
+create table public.billing_provider_settings (
+  provider text not null default 'paypal',
+  environment text not null check (environment in ('sandbox', 'live')),
+  key text not null,
+  value text not null,
+  updated_at timestamptz not null default now(),
+
+  primary key (provider, environment, key)
+);
+
+alter table public.billing_provider_settings enable row level security;
+revoke all on public.billing_provider_settings from anon, authenticated;

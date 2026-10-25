@@ -137,9 +137,26 @@ async function tpRenderBilling() {
     return;
   }
 
-  // ---- not subscribed: offer the plans PayPal actually has ----
+  // ---- configured, but nothing to sell yet ----
+  // The plans have to exist at PayPal before anyone can subscribe. Rather than
+  // creating them by hand in a terminal, the project owner creates them from
+  // here; the server checks who is asking before it does anything.
   if (!config.plans?.length) {
-    stateEl.innerHTML = `${sandbox}<p>No plans have been created at PayPal yet, so there is nothing to subscribe to.</p>`;
+    stateEl.innerHTML = `${sandbox}<p>PayPal is connected, but no plans have been created yet, so there is nothing to subscribe to.</p>`;
+    plansEl.hidden = false;
+    plansEl.innerHTML = '<button class="button button-paper button-small" type="button" id="setupPlans">Create the plans at PayPal</button>';
+    document.getElementById("setupPlans").addEventListener("click", async (e) => {
+      e.target.disabled = true;
+      statusEl.textContent = "Asking PayPal to create the product, plans and webhook\u2026";
+      try {
+        const result = await tpBilling.call({ action: "setup" });
+        statusEl.innerHTML = `<strong>${result.environment}</strong><br>${(result.done || []).join("<br>")}`;
+        setTimeout(tpRenderBilling, 2500);
+      } catch (err) {
+        statusEl.textContent = err.message;
+        e.target.disabled = false;
+      }
+    });
     return;
   }
 

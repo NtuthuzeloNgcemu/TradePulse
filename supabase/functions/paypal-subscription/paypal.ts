@@ -1,11 +1,20 @@
 // Shared PayPal helpers.
 //
+// NOTE: this file is duplicated in paypal-subscription/ and paypal-webhook/.
+// Edge functions deploy independently and a parent-directory import does not
+// survive deployment, and this project has no build step to copy it. Keep the
+// two copies identical; the canonical text is this header plus everything
+// below it.
+//
 // Secrets (set on the Supabase project, never in code or in the browser):
 //   PAYPAL_CLIENT_ID      - also sent to the browser; public by design
 //   PAYPAL_CLIENT_SECRET  - server only
 //   PAYPAL_ENV            - "sandbox" (default) or "live"
-//   PAYPAL_WEBHOOK_ID     - the id PayPal gives when you register the webhook
-//   PAYPAL_PLAN_STARTER / PAYPAL_PLAN_PRO / PAYPAL_PLAN_DESK - plan ids (P-...)
+//   PAYPAL_SETUP_EMAIL    - only this signed-in account may run "setup"
+//
+// Plan ids and the webhook id are NOT secrets: the app creates them itself
+// through the "setup" action and stores them in billing_plans and
+// billing_provider_settings, so setting payments up needs no terminal.
 //
 // Base URLs per PayPal's REST docs: sandbox api-m.sandbox.paypal.com,
 // live api-m.paypal.com.
@@ -27,21 +36,35 @@ export function paypalEnv(): { env: "sandbox" | "live"; base: string } {
   return { env, base: env === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com" };
 }
 
-/** Plan ids, keyed by our own plan code. Missing ones are simply absent. */
-export function planIds(): Partial<Record<PlanCode, string>> {
-  const out: Partial<Record<PlanCode, string>> = {};
-  for (const code of PLAN_CODES) {
-    const id = Deno.env.get(`PAYPAL_PLAN_${code.toUpperCase()}`);
-    if (id) out[code] = id;
-  }
-  return out;
+export type StoredPlan = {
+  plan_code: string;
+  provider_plan_id: string;
+  amount: number | null;
+  currency: string | null;
+};
+
+/** The plans this project created, for the environment it is pointed at. */
+// deno-lint-ignore no-explicit-any
+export async function storedPlans(admin: any): Promise<StoredPlan[]> {
+  const { data } = await admin
+    .from("billing_plans")
+    .select("plan_code, provider_plan_id, amount, currency")
+    .eq("provider", "paypal")
+    .eq("environment", paypalEnv().env)
+    .eq("active", true);
+  return data || [];
 }
 
-export function planCodeFor(planId: string): PlanCode | null {
-  for (const [code, id] of Object.entries(planIds())) {
-    if (id === planId) return code as PlanCode;
-  }
-  return null;
+// deno-lint-ignore no-explicit-any
+export async function setting(admin: any, key: string): Promise<string | null> {
+  const { data } = await admin
+    .from("billing_provider_settings")
+    .select("value")
+    .eq("provider", "paypal")
+    .eq("environment", paypalEnv().env)
+    .eq("key", key)
+    .maybeSingle();
+  return data?.value ?? null;
 }
 
 // One token per warm instance. PayPal tokens last hours; this refreshes a

@@ -6,7 +6,8 @@
 // is, and only then write a row. The subscriptions table is server-writable
 // only, so a forged request can't grant a plan.
 //
-// Actions: "config" (no session needed), "claim", "refresh", "cancel".
+// Actions: "config" (no session needed), "claim", "refresh", "cancel",
+// and "setup" (creates the PayPal product, plans and webhook once).
 
 import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import {
@@ -16,75 +17,58 @@ import {
   mapStatus,
   paypalEnv,
   paypalFetch,
-  planCodeFor,
-  planIds,
   reply,
-} from "../_shared/paypal.ts";
+  setting,
+  storedPlans,
+} from "./paypal.ts";
 
 // PayPal subscription ids look like I-BW452GLLEP1G.
 const SUBSCRIPTION_ID = /^[A-Z0-9-]{3,50}$/;
 
-type PlanInfo = { code: string; plan_id: string; amount: string | null; currency: string | null };
+// What "setup" creates. Prices are in the plan's own currency; PayPal has no
+// ZAR, so these are USD and the Rand price is shown beside them in the app.
+const SETUP_PLANS = [
+  { code: "starter", name: "TradePulse Starter", description: "Manual journaling, CSV import and analytics you can check.", value: "19" },
+  { code: "pro", name: "TradePulse Pro", description: "Everything in Starter, plus AI reading of statements, screenshots and notes.", value: "49" },
+];
 
-// Plan prices come from PayPal, not from our own copy, so the page can never
-// advertise a price different from the one PayPal will charge. Cached briefly
-// because the pricing page calls this on every visit.
-let planCache: { at: number; plans: PlanInfo[] } | null = null;
-
-async function describePlans(): Promise<PlanInfo[]> {
-  if (planCache && Date.now() - planCache.at < 10 * 60 * 1000) return planCache.plans;
-
-  const plans: PlanInfo[] = [];
-  for (const [code, planId] of Object.entries(planIds())) {
-    let amount: string | null = null;
-    let currency: string | null = null;
-    try {
-      const res = await paypalFetch(`/v1/billing/plans/${planId}`);
-      if (res.ok) {
-        const plan = await res.json();
-        const cycles = Array.isArray(plan?.billing_cycles) ? plan.billing_cycles : [];
-        const regular = cycles.find((c: Record<string, unknown>) => c?.tenure_type === "REGULAR");
-        const price = regular?.pricing_scheme?.fixed_price;
-        if (price?.value) {
-          amount = String(price.value);
-          currency = String(price.currency_code || "");
-        }
-      }
-    } catch {
-      // A price we couldn't read is reported as unknown, never guessed.
-    }
-    plans.push({ code, plan_id: planId, amount, currency });
-  }
-  planCache = { at: Date.now(), plans };
-  return plans;
-}
+const WEBHOOK_EVENTS = [
+  "BILLING.SUBSCRIPTION.CREATED",
+  "BILLING.SUBSCRIPTION.ACTIVATED",
+  "BILLING.SUBSCRIPTION.UPDATED",
+  "BILLING.SUBSCRIPTION.CANCELLED",
+  "BILLING.SUBSCRIPTION.SUSPENDED",
+  "BILLING.SUBSCRIPTION.EXPIRED",
+  "PAYMENT.SALE.COMPLETED",
+];
 
 /** Reads one subscription from PayPal and shapes it into a row we can store. */
-async function fetchSubscription(subscriptionId: string) {
+// deno-lint-ignore no-explicit-any
+async function fetchSubscription(admin: any, subscriptionId: string) {
   const res = await paypalFetch(`/v1/billing/subscriptions/${subscriptionId}`);
   if (res.status === 404) return { error: "PayPal doesn't recognise that subscription." as const };
   if (!res.ok) return { error: `PayPal returned ${res.status}.` as const };
 
   const sub = await res.json();
   const planId = String(sub?.plan_id || "");
-  const planCode = planCodeFor(planId);
-  if (!planCode) return { error: "That subscription isn't for a TradePulse plan." as const };
+  const plans = await storedPlans(admin);
+  const match = plans.find((p) => p.provider_plan_id === planId);
+  if (!match) return { error: "That subscription isn't for a TradePulse plan." as const };
 
   const status = mapStatus(sub?.status);
   if (!status) return { error: `PayPal reported a state we don't handle (${sub?.status}).` as const };
 
   const price = sub?.billing_info?.last_payment?.amount;
   return {
-    sub,
     row: {
       provider: "paypal",
       environment: paypalEnv().env,
       provider_subscription_id: String(sub.id),
       provider_plan_id: planId,
-      plan_code: planCode,
+      plan_code: match.plan_code,
       status,
-      amount: price?.value ? Number(price.value) : null,
-      currency: price?.currency_code ? String(price.currency_code) : null,
+      amount: price?.value ? Number(price.value) : match.amount,
+      currency: price?.currency_code ? String(price.currency_code) : match.currency,
       current_period_end: sub?.billing_info?.next_billing_time || null,
       cancelled_at: status === "cancelled" ? new Date().toISOString() : null,
     },
@@ -103,6 +87,8 @@ Deno.serve(async (req) => {
   }
   const action = String(body.action || "");
 
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   const clientId = Deno.env.get("PAYPAL_CLIENT_ID");
   const { env } = paypalEnv();
 
@@ -111,25 +97,25 @@ Deno.serve(async (req) => {
     if (!clientId || !Deno.env.get("PAYPAL_CLIENT_SECRET")) {
       return reply(200, { configured: false, environment: env, plans: [] });
     }
-    try {
-      return reply(200, { configured: true, environment: env, client_id: clientId, plans: await describePlans() });
-    } catch (e) {
-      if (e instanceof PayPalNotConfigured) return reply(200, { configured: false, environment: env, plans: [] });
-      return reply(502, { error: "Couldn't reach PayPal just now." });
-    }
+    const plans = (await storedPlans(admin)).map((p) => ({
+      code: p.plan_code,
+      plan_id: p.provider_plan_id,
+      amount: p.amount === null ? null : String(p.amount),
+      currency: p.currency,
+    }));
+    return reply(200, { configured: true, environment: env, client_id: clientId, plans });
   }
 
   // ---- everything else needs a signed-in user ----
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: req.headers.get("Authorization") || "" } },
     auth: { persistSession: false },
   });
-  const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
 
   const { data: userData, error: userError } = await userClient.auth.getUser();
   if (userError || !userData?.user) return reply(401, { error: "Please log in again." });
   const userId = userData.user.id;
+  const userEmail = (userData.user.email || "").toLowerCase();
 
   try {
     await accessToken();
@@ -138,7 +124,112 @@ Deno.serve(async (req) => {
     return reply(502, { error: "Couldn't reach PayPal just now. Nothing was changed." });
   }
 
-  // ---- claim: the browser says PayPal approved a subscription ----
+  // ---- setup: create the product, plans and webhook, once ----
+  // Creating plans is not something any signed-in user may do, so it is
+  // restricted to the one account named in PAYPAL_SETUP_EMAIL.
+  if (action === "setup") {
+    const owner = (Deno.env.get("PAYPAL_SETUP_EMAIL") || "").toLowerCase();
+    if (!owner) return reply(503, { error: "PAYPAL_SETUP_EMAIL isn't set, so setup is disabled." });
+    if (userEmail !== owner) return reply(403, { error: "Only the project owner can run setup." });
+
+    const done: string[] = [];
+
+    // 1. Product. Reused if setup has run before.
+    let productId = await setting(admin, "product_id");
+    if (!productId) {
+      const res = await paypalFetch("/v1/catalogs/products", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "TradePulse",
+          description: "Trading journal and review",
+          type: "SERVICE",
+          category: "SOFTWARE",
+        }),
+      });
+      if (!res.ok) return reply(502, { error: `Couldn't create the product (PayPal returned ${res.status}).`, done });
+      productId = String((await res.json()).id);
+      await admin.from("billing_provider_settings").upsert(
+        { provider: "paypal", environment: env, key: "product_id", value: productId, updated_at: new Date().toISOString() },
+        { onConflict: "provider,environment,key" },
+      );
+      done.push(`Created product ${productId}`);
+    } else {
+      done.push(`Reused product ${productId}`);
+    }
+
+    // 2. Plans. A plan's price is fixed once created, so an existing plan is
+    // left exactly as it is rather than silently replaced.
+    const existing = await storedPlans(admin);
+    for (const plan of SETUP_PLANS) {
+      if (existing.some((p) => p.plan_code === plan.code)) {
+        done.push(`${plan.code}: already exists, left alone`);
+        continue;
+      }
+      const res = await paypalFetch("/v1/billing/plans", {
+        method: "POST",
+        body: JSON.stringify({
+          product_id: productId,
+          name: plan.name,
+          description: plan.description,
+          billing_cycles: [{
+            frequency: { interval_unit: "MONTH", interval_count: 1 },
+            tenure_type: "REGULAR",
+            sequence: 1,
+            total_cycles: 0, // bills until cancelled
+            pricing_scheme: { fixed_price: { value: plan.value, currency_code: "USD" } },
+          }],
+          payment_preferences: {
+            auto_bill_outstanding: true,
+            setup_fee_failure_action: "CONTINUE",
+            payment_failure_threshold: 3,
+          },
+        }),
+      });
+      if (!res.ok) {
+        done.push(`${plan.code}: FAILED (PayPal returned ${res.status})`);
+        continue;
+      }
+      const created = await res.json();
+      await admin.from("billing_plans").upsert({
+        provider: "paypal",
+        environment: env,
+        plan_code: plan.code,
+        provider_product_id: productId,
+        provider_plan_id: String(created.id),
+        amount: Number(plan.value),
+        currency: "USD",
+        active: true,
+      }, { onConflict: "provider,environment,plan_code" });
+      done.push(`${plan.code}: created ${created.id} at USD ${plan.value}/month`);
+    }
+
+    // 3. Webhook, pointed back at this project's own webhook function.
+    let webhookId = await setting(admin, "webhook_id");
+    if (!webhookId) {
+      const url = `${supabaseUrl}/functions/v1/paypal-webhook`;
+      const res = await paypalFetch("/v1/notifications/webhooks", {
+        method: "POST",
+        body: JSON.stringify({ url, event_types: WEBHOOK_EVENTS.map((name) => ({ name })) }),
+      });
+      if (res.ok) {
+        webhookId = String((await res.json()).id);
+        await admin.from("billing_provider_settings").upsert(
+          { provider: "paypal", environment: env, key: "webhook_id", value: webhookId, updated_at: new Date().toISOString() },
+          { onConflict: "provider,environment,key" },
+        );
+        done.push(`Registered webhook ${webhookId} for ${url}`);
+      } else {
+        const detail = await res.text();
+        done.push(`Webhook NOT registered (PayPal returned ${res.status}). Without it, cancellations and failed payments made at PayPal won't reach TradePulse. ${detail.slice(0, 200)}`);
+      }
+    } else {
+      done.push(`Reused webhook ${webhookId}`);
+    }
+
+    return reply(200, { environment: env, done });
+  }
+
+  // ---- claim / refresh ----
   if (action === "claim" || action === "refresh") {
     let subscriptionId = String(body.subscription_id || "");
 
@@ -156,7 +247,7 @@ Deno.serve(async (req) => {
 
     if (!SUBSCRIPTION_ID.test(subscriptionId)) return reply(400, { error: "Missing subscription." });
 
-    const result = await fetchSubscription(subscriptionId);
+    const result = await fetchSubscription(admin, subscriptionId);
     if ("error" in result) return reply(400, { error: result.error });
 
     // A subscription already recorded against a different user is not ours to
