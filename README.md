@@ -68,6 +68,31 @@ Anything a person can touch is animated with a spring from `motion.js`, never a 
 
 `supabase/functions/process-source` sends one file to Groq when the user asks. It needs a `GROQ_API_KEY` secret on the Supabase project (Settings > Edge Functions > Secrets). Without it, the app says AI reading isn't set up. Optional `GROQ_TEXT_MODEL` and `GROQ_VISION_MODEL` override the defaults.
 
+## Plans
+
+Three tiers. **Free** is the default: an account with no live subscription is on it, which is a state, not an error.
+
+| | Free | Pro | Desk |
+| --- | --- | --- | --- |
+| Trades | 30 | unlimited | unlimited |
+| Manual entry, CSV import | yes | yes | yes |
+| Analytics | yes | yes | yes |
+| Insights | no | yes | yes |
+| AI file reading | no | yes | yes |
+| Team features | no | no | planned |
+
+### Where each limit is actually enforced
+
+A limit that only exists in JavaScript is a suggestion, so each one lives where it cannot be bypassed:
+
+- **Trade cap:** a `before insert` trigger on `trades`, because trades are inserted straight from the browser under RLS. Hitting it raises `trade_limit_reached`, which the app turns into a sentence.
+- **AI reading:** inside `process-source`, which checks `current_plan()` before it spends anything. Hiding the button would not stop a direct call.
+- **Insights:** the interface only. The observations are calculated in the browser from trades the person already owns, so this one cannot be made airtight without moving the maths off the device. It is a plan boundary, not a secret.
+
+`current_plan(uid)` is the single source of truth: it reads `subscriptions`, prefers the highest live plan, and returns `free` when there is none. The browser may call it and cannot change the answer. When it can't be read, the app assumes free — the assumption that promises least.
+
+Free is not sold through PayPal and Desk is arranged directly, so Pro is the only tier with a PayPal plan behind it.
+
 ## Payments (PayPal subscriptions)
 
 PayPal has no ZAR. South African merchants receive into a USD, EUR or GBP balance and withdraw to Rands through FNB, so the plans are **charged in the currency the PayPal plan was created in** (USD), with the Rand price shown beside it as the listed price. A South African provider for ZAR debit orders is planned separately.

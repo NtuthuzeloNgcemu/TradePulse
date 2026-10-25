@@ -27,9 +27,10 @@ const SUBSCRIPTION_ID = /^[A-Z0-9-]{3,50}$/;
 
 // What "setup" creates. Prices are in the plan's own currency; PayPal has no
 // ZAR, so these are USD and the Rand price is shown beside them in the app.
+// Free is not sold through PayPal and Desk is arranged directly, so Pro is
+// the only tier with a PayPal plan behind it.
 const SETUP_PLANS = [
-  { code: "starter", name: "TradePulse Starter", description: "Manual journaling, CSV import and analytics you can check.", value: "19" },
-  { code: "pro", name: "TradePulse Pro", description: "Everything in Starter, plus AI reading of statements, screenshots and notes.", value: "49" },
+  { code: "pro", name: "TradePulse Pro", description: "Unlimited trades, AI reading of statements and screenshots, and calculated insights.", value: "49" },
 ];
 
 const WEBHOOK_EVENTS = [
@@ -234,14 +235,16 @@ Deno.serve(async (req) => {
     let subscriptionId = String(body.subscription_id || "");
 
     if (action === "refresh") {
-      const { data: existing } = await userClient
+      // A live subscription wins over a cancelled one, however recent the
+      // cancelled one is: someone who resubscribed should see the new plan.
+      const { data: rows } = await userClient
         .from("subscriptions")
-        .select("provider_subscription_id")
+        .select("provider_subscription_id, status, created_at")
         .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (!existing) return reply(200, { subscription: null });
+        .order("created_at", { ascending: false });
+      if (!rows?.length) return reply(200, { subscription: null });
+      const LIVE = ["active", "approved", "suspended", "approval_pending"];
+      const existing = rows.find((r: { status: string }) => LIVE.includes(r.status)) || rows[0];
       subscriptionId = existing.provider_subscription_id;
     }
 

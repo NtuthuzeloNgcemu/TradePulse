@@ -48,11 +48,32 @@
 
 .sidebar-top {
   height: 76px;
-  padding-inline: 20px;
+  /* Tight: the wordmark, the plan badge and the collapse control all share
+     this row inside a 244px sidebar. */
+  padding-inline: 16px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   border-block-end: 1px solid rgba(251, 253, 249, 0.08);
+}
+
+.sidebar-top .brand {
+  min-width: 0;
+  gap: 8px;
+  /* Slightly smaller than the marketing wordmark so the plan badge fits
+     beside it without truncating the name. */
+  font-size: 0.95rem;
+}
+
+.sidebar-top .brand img {
+  width: 28px;
+  height: 28px;
+}
+
+.sidebar-top .brand > span:not(.plan-badge) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar .brand {
@@ -2238,4 +2259,33 @@ button.breakdown-row:hover {
   color: var(--ledger-muted);
   font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Plan badge ---------- */
+.brand .plan-badge {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+/* Free is a statement of fact, so it stays quiet */
+.plan-badge-free {
+  background: rgba(251, 253, 249, 0.1);
+  color: rgba(251, 253, 249, 0.6);
+}
+
+.plan-badge-pro,
+.plan-badge-desk {
+  background: var(--mint);
+  color: var(--ledger-ink);
+}
+
+/* Collapsed sidebar has no room for it */
+.sidebar-collapsed .brand .plan-badge {
+  display: none;
 }

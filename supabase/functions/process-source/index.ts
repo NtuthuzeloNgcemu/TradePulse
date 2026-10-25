@@ -138,6 +138,18 @@ Deno.serve(async (req) => {
   if (!kind) return reply(400, { error: "TradePulse can't read this file type with AI yet." });
   if (source.status === "processing") return reply(409, { error: "This file is already being read." });
 
+  // AI reading is a paid feature, and it costs real money per call, so the
+  // check is here rather than in the browser. Hiding the button would not
+  // stop anyone calling this function directly.
+  const { data: plan, error: planError } = await admin.rpc("current_plan", { uid: userId });
+  if (planError) return reply(503, { error: "Couldn't check your plan just now. Nothing was read." });
+  if (plan !== "pro" && plan !== "desk") {
+    return reply(402, {
+      error: "AI reading is part of Pro. Your file is still stored and nothing was sent anywhere.",
+      upgrade: true,
+    });
+  }
+
   const apiKey = Deno.env.get("GROQ_API_KEY");
   if (!apiKey) return reply(503, { error: "AI reading isn't set up yet. The Groq API key hasn't been added." });
 

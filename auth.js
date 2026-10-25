@@ -23,11 +23,11 @@ const isResetPage = document.body.dataset.authPage === "reset";
 
 // ---------- Plan param from pricing cards ----------
 const planMeta = {
-  starter: { label: "Starter", price: "R299/mo" },
-  pro: { label: "Pro", price: "R799/mo" },
-  desk: { label: "Desk", price: "R2,499/mo" },
+  free: { label: "Free", note: "Every account starts free, with up to 30 trades." },
+  pro: { label: "Pro", note: "Pro is R799/mo, charged by PayPal in US dollars. You can subscribe from Account once you're in." },
+  desk: { label: "Desk", note: "Desk is R2,499/mo and arranged with us directly. Sign up and we'll take it from there." },
 };
-// Billing isn't live yet, so the plan is recorded as interest only
+// Choosing a plan here only tailors the message: nothing is charged at sign-up
 
 const params = new URLSearchParams(window.location.search);
 const selectedPlan = params.get("plan");
@@ -37,7 +37,7 @@ if (selectedPlan && authFormHeader && planMeta[selectedPlan]) {
   const meta = planMeta[selectedPlan];
   const note = document.createElement("p");
   note.className = "auth-plan-note";
-  note.textContent = `${meta.label} (${meta.price} planned). Billing isn't live yet, so your account is free for now.`;
+  note.textContent = `${meta.label}. ${meta.note}`;
   authFormHeader.prepend(note);
 }
 

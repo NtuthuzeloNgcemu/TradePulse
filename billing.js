@@ -10,8 +10,8 @@
    PayPal plan was created in (USD), shown beside the Rand price.
 ----------------------------------------------- */
 
-const TP_PLAN_NAMES = { starter: "Starter", pro: "Pro", desk: "Desk" };
-const TP_PLAN_ZAR = { starter: "R299", pro: "R799", desk: "R2,499" };
+const TP_PLAN_NAMES = { free: "Free", starter: "Starter", pro: "Pro", desk: "Desk" };
+const TP_PLAN_ZAR = { pro: "R799", desk: "R2,499" };
 
 const TP_STATUS_COPY = {
   approval_pending: "Waiting for you to approve it at PayPal.",

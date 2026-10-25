@@ -12,6 +12,55 @@ const body = document.body;
 let currentUser = null;
 
 /* =================================================================
+   Plan
+   What each plan allows. The database enforces the trade cap and the
+   edge function enforces AI reading; this copy exists only so the
+   interface can say so before someone runs into the wall.
+   ================================================================= */
+const PLANS = {
+  free: { name: "Free", trades: 30, ai: false, insights: false },
+  pro: { name: "Pro", trades: null, ai: true, insights: true },
+  desk: { name: "Desk", trades: null, ai: true, insights: true },
+};
+
+// Starts as free: if the plan can't be read, the safe assumption is the
+// one that promises least, never the one that promises most.
+let currentPlan = { code: "free", ...PLANS.free, known: false };
+
+async function loadPlan() {
+  if (!currentUser) return currentPlan;
+  const { data, error } = await tpClient.rpc("current_plan", { uid: currentUser.id });
+  const code = !error && PLANS[data] ? data : "free";
+  currentPlan = { code, ...PLANS[code], known: !error };
+  return currentPlan;
+}
+
+/**
+ * The free trade cap is enforced by a database trigger, so hitting it comes
+ * back as a Postgres error. This turns it into a sentence worth reading.
+ * Anything else is returned unchanged rather than dressed up.
+ */
+function tradeSaveMessage(error, attempted = 1) {
+  const raw = String(error?.message || "");
+  if (!raw.includes("trade_limit_reached")) return raw;
+  const cap = PLANS.free.trades;
+  return attempted > 1
+    ? `The free plan holds ${cap} trades, and these would go past it. Nothing was added. Subscribe to Pro for unlimited trades, or delete some trades first.`
+    : `The free plan holds ${cap} trades and yours is full. Subscribe to Pro for unlimited trades, or delete a trade to make room.`;
+}
+
+function renderPlanBadge() {
+  const brand = document.querySelector(".sidebar .brand");
+  if (!brand || brand.querySelector(".plan-badge")) return;
+  const badge = document.createElement("span");
+  badge.className = `plan-badge plan-badge-${currentPlan.code}`;
+  badge.textContent = currentPlan.name;
+  badge.title = currentPlan.code === "free" ? "Free plan" : `${currentPlan.name} subscription`;
+  brand.appendChild(badge);
+  body.dataset.plan = currentPlan.code;
+}
+
+/* =================================================================
    Shared helpers
    ================================================================= */
 
@@ -137,6 +186,8 @@ const TP = {
   createDialog,
   regionLoading: setRegionLoading,
   regionError: setRegionError,
+  getPlan: () => cached("plan", loadPlan),
+  plan: () => currentPlan,
 };
 window.TP = TP;
 
@@ -162,6 +213,12 @@ window.TP = TP;
   body.classList.add("auth-ready");
   currentUser = session.user;
   resolveReady(currentUser);
+
+  // The plan decides what the rest of the interface offers, so it is read
+  // before anything that depends on it is drawn.
+  await TP.getPlan();
+  renderPlanBadge();
+
   renderSourcesSummary();
   renderOverview();
 
@@ -875,7 +932,15 @@ document.getElementById("reviewConfirm")?.addEventListener("click", async () => 
     }));
     const { error: insertError } = await tpClient.from("trades").insert(rows);
     if (insertError) {
-      if (summary) summary.innerHTML = `<span class="file-result-error">Couldn't save trades: ${escapeHtml(insertError.message)}. Nothing was added.</span>`;
+      const capped = String(insertError.message || "").includes("trade_limit_reached");
+      const text = capped
+        ? tradeSaveMessage(insertError, rows.length)
+        : `Couldn't save trades: ${insertError.message}. Nothing was added.`;
+      if (summary) {
+        summary.innerHTML = `<span class="file-result-error">${escapeHtml(text)}</span>${
+          capped ? ` <a href="account.html#billing">See Pro</a>` : ""
+        }`;
+      }
       btn.disabled = false;
       btn.textContent = originalLabel;
       return;
@@ -955,6 +1020,20 @@ function readWithAiById(id) {
   if (dropZone) dropZone.hidden = true;
   document.getElementById("manualEntryToggle")?.setAttribute("hidden", "");
   otherFilesHtml = "";
+
+  // The edge function refuses this on a free account, so there is no point
+  // sending the request. The answer is the same either way.
+  if (!currentPlan.ai) {
+    showFileMessage(`
+      <strong>Reading files with AI is part of Pro.</strong>
+      <p>Your file stays where it is and nothing is sent anywhere. On the free plan you can still import CSV files and enter trades by hand.</p>
+      <div class="review-actions review-actions-start">
+        <button class="button button-paper button-small" type="button" data-ai-cancel>Close</button>
+        <a class="button button-ink button-small" href="account.html#billing">See Pro</a>
+      </div>`);
+    return;
+  }
+
   loadSource(id)
     .then((source) => {
       showFileMessage(`
@@ -1155,7 +1234,7 @@ document.getElementById("manualEntryForm")?.addEventListener("submit", async (ev
       notes: getValue("tradeNotes"),
     });
     if (error) {
-      manualError.textContent = error.message;
+      manualError.textContent = tradeSaveMessage(error);
       submitBtn.disabled = false;
       submitBtn.textContent = originalLabel;
       return;

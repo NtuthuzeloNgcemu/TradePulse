@@ -9,7 +9,7 @@
 // again; the unique key is what stops it being applied twice.
 
 import { createClient } from "npm:@supabase/supabase-js@2.117.3";
-import { mapStatus, paypalFetch, setting } from "./paypal.ts";
+import { mapStatus, paypalEnv, paypalFetch, setting, storedPlans } from "./paypal.ts";
 
 const ok = (note: string) => new Response(JSON.stringify({ ok: true, note }), {
   status: 200,
@@ -25,6 +25,41 @@ function signatureHeaders(req: Request) {
     transmission_sig: req.headers.get("paypal-transmission-sig") || "",
     transmission_time: req.headers.get("paypal-transmission-time") || "",
   };
+}
+
+/**
+ * Creates a subscription row for a payment the browser never confirmed.
+ * Returns a note describing what happened, for the event log.
+ */
+// deno-lint-ignore no-explicit-any
+async function createFromPayPal(admin: any, subscriptionId: string, userId: string, eventStatus: string): Promise<string> {
+  const res = await paypalFetch(`/v1/billing/subscriptions/${subscriptionId}`);
+  if (!res.ok) return `Could not read the subscription from PayPal to create it (${res.status}). It is still unrecorded.`;
+
+  const sub = await res.json();
+  const planId = String(sub?.plan_id || "");
+  const match = (await storedPlans(admin)).find((p) => p.provider_plan_id === planId);
+  if (!match) return `Subscription is for plan ${planId}, which is not a TradePulse plan. Left unrecorded.`;
+
+  const status = mapStatus(sub?.status) || eventStatus;
+  const price = sub?.billing_info?.last_payment?.amount;
+
+  const { error } = await admin.from("subscriptions").upsert({
+    user_id: userId,
+    provider: "paypal",
+    environment: paypalEnv().env,
+    provider_subscription_id: subscriptionId,
+    provider_plan_id: planId,
+    plan_code: match.plan_code,
+    status,
+    amount: price?.value ? Number(price.value) : match.amount,
+    currency: price?.currency_code ? String(price.currency_code) : match.currency,
+    current_period_end: sub?.billing_info?.next_billing_time || null,
+    cancelled_at: status === "cancelled" || status === "expired" ? new Date().toISOString() : null,
+  }, { onConflict: "provider,provider_subscription_id" });
+
+  if (error) return `Tried to create the subscription from the webhook but saving failed: ${error.message}`;
+  return `Created the subscription from the webhook (${status}); the browser never confirmed it.`;
 }
 
 Deno.serve(async (req) => {
@@ -140,8 +175,18 @@ Deno.serve(async (req) => {
         if (row) {
           await admin.from("subscriptions").update(update).eq("id", row.id);
           applied = `Subscription set to ${status}.`;
+        } else if (status === "approval_pending") {
+          // Created at PayPal but not approved by anyone yet. Nothing has been
+          // paid, and recording it would make an abandoned checkout look like
+          // a subscription, so it is noted and left alone.
+          applied = "Created at PayPal, not yet approved. Nothing recorded.";
         } else {
-          applied = "Event recorded; the subscription row has not been created by the app yet.";
+          // No row yet: the person approved at PayPal and then closed the tab
+          // before the browser could tell us. They have been charged, so the
+          // subscription is created here instead of being left unrecorded.
+          // The event's own fields are not trusted for this - the subscription
+          // is re-read from PayPal, exactly as the browser's claim does.
+          applied = await createFromPayPal(admin, subscriptionId, userId, status);
         }
       }
     }

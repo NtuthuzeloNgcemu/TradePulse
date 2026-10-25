@@ -1,5 +1,39 @@
 # Changes
 
+## v27 (25 Oct 2026): three plans, with limits that are real
+
+Free, Pro and Desk. Starter is gone: free replaces it. An account with no live subscription is on Free, which is a state rather than an error.
+
+| | Free | Pro | Desk |
+| --- | --- | --- | --- |
+| Trades | 30 | unlimited | unlimited |
+| Manual entry, CSV import, analytics | yes | yes | yes |
+| Insights | no | yes | yes |
+| AI file reading | no | yes | yes |
+
+### Where each limit lives, and why it matters
+A limit enforced only in JavaScript is a suggestion. Hiding a button stops nobody who opens the console.
+- **The trade cap is a database trigger.** Trades are inserted straight from the browser under row-level security, so the cap had to be in Postgres. Verified on the live database: a free account is refused its 31st trade, a Pro account is not, and cancelling drops the account back to free. The test rolled itself back.
+- **AI reading is checked inside `process-source`**, before anything is spent. It is the one that costs real money per call, so it is also the one most worth enforcing properly.
+- **Insights are locked in the interface only, and this is said plainly.** The observations are calculated in the browser from trades the person already owns. Making that lock airtight would mean moving the maths off the device, which is not worth it for a feature derived from the user's own data. It is a plan boundary, not a secret.
+
+`current_plan(uid)` is the single source of truth. It reads `subscriptions`, prefers the highest live plan, and returns `free` when there is none. The browser can ask and cannot change the answer. If it can't be read at all, the app assumes free — the assumption that promises least rather than most.
+
+### Interface
+- The plan shows beside the logo: **TradePulse** followed by Free, Pro or Desk.
+- A free account that reaches 30 trades is told what the cap is and what to do, not shown a Postgres error.
+- Insights and AI reading each explain what they are and link to the plan, rather than disappearing.
+- Pricing is Free, Pro, Desk. Pro says the trade limit is lifted; Free says it holds 30.
+- Registration no longer claims "billing isn't live", because it now is.
+
+### Fixed: a paid subscription that was never recorded
+Testing turned up a live PayPal subscription with no row in TradePulse. Someone approves at PayPal, then closes the tab before the browser can confirm it — they have paid and the app doesn't know. The webhook had the user id all along and only wrote a note about it. It now creates the subscription, re-reading it from PayPal rather than trusting the event. An abandoned checkout that was never approved is still ignored, so it can't look like a subscription.
+
+Also: `refresh` now prefers a live subscription over a more recent cancelled one, so resubscribing shows the new plan.
+
+### Testing
+40 unit tests, 74 end-to-end checks, 29 gesture checks, 29 billing checks and 27 new plan checks pass. Three older assertions changed because the product did: AI reading now needs Pro, Starter no longer exists, and the registration page no longer says billing is off.
+
 ## v26 (25 Oct 2026): PayPal subscriptions, in sandbox, set up without a terminal
 
 Billing exists and is deployed. It is off until the PayPal secrets are set, and while `PAYPAL_ENV` is `sandbox` the account page says "Test mode" wherever money could move.

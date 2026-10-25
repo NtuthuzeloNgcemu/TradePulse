@@ -41,6 +41,22 @@
   }
 
   function paint(trades) {
+    // Insights are part of Pro. Unlike AI reading, this is a lock on the
+    // interface only: the numbers are worked out in the browser from trades
+    // the person already owns, so it cannot be made airtight without taking
+    // the maths off the device. It is honest about being a plan boundary
+    // rather than pretending there is nothing to see.
+    if (!TP.plan().insights) {
+      root.innerHTML = `
+        <section class="surface empty">
+          <h2>Insights are part of Pro.</h2>
+          <p>TradePulse compares your own trades by setup, session, instrument, direction and rule score, and shows only the differences backed by enough trades to mean something. No AI, no generic advice.</p>
+          <p class="subtle">Your trades, analytics and playbook stay available on the free plan.</p>
+          <a class="button button-ink button-small" href="account.html#billing">See Pro</a>
+        </section>`;
+      return;
+    }
+
     const s = A.summarise(trades);
     if (s.countedTrades < A.SMALL_SAMPLE) {
       root.innerHTML = `
