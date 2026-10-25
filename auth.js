@@ -291,13 +291,18 @@ if (registerForm) {
         return;
       }
 
-      // Email confirmation required: swap the form for a "check your email" notice
+      // Email confirmation required: swap the form for the code entry screen.
+      // A code is used rather than only a link because a link has to land on a
+      // URL Supabase is configured to allow, which is one more thing to get
+      // wrong; a code works wherever the person already is.
       const confirmEmailAddress = document.getElementById("confirmEmailAddress");
       const formWrap = document.getElementById("registerFormWrap");
       const notice = document.getElementById("confirmEmailNotice");
-      if (confirmEmailAddress) confirmEmailAddress.textContent = email.value.trim();
+      pendingEmail = email.value.trim();
+      if (confirmEmailAddress) confirmEmailAddress.textContent = pendingEmail;
       if (formWrap) formWrap.hidden = true;
       if (notice) notice.hidden = false;
+      document.getElementById("otpCode")?.focus();
     } catch (err) {
       btn.textContent = originalLabel;
       btn.disabled = false;
@@ -400,3 +405,114 @@ if (newPasswordForm) {
     window.location.href = "dashboard.html";
   });
 }
+
+
+/* ---------- Confirming the account with the emailed code ---------- */
+// The address the code was sent to. Kept in memory only: it is already on
+// screen, and it should not outlive the tab.
+let pendingEmail = "";
+
+(function otpConfirmation() {
+  const form = document.getElementById("otpForm");
+  if (!form) return;
+
+  const input = document.getElementById("otpCode");
+  const errorEl = document.getElementById("otpError");
+  const submit = document.getElementById("otpSubmit");
+  const resend = document.getElementById("otpResend");
+  const resendStatus = document.getElementById("otpResendStatus");
+
+  // Typing or pasting anything that isn't a digit is a mistake, not an entry.
+  input?.addEventListener("input", () => {
+    const cleaned = input.value.replace(/\D/g, "").slice(0, 6);
+    if (cleaned !== input.value) input.value = cleaned;
+    if (errorEl) errorEl.textContent = "";
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const token = (input?.value || "").trim();
+
+    if (!/^[0-9]{6}$/.test(token)) {
+      if (errorEl) errorEl.textContent = "Enter the six-digit code from the email.";
+      input?.focus();
+      return;
+    }
+    if (!pendingEmail) {
+      if (errorEl) errorEl.textContent = "Start again from the registration form so we know which address to confirm.";
+      return;
+    }
+
+    const original = submit.textContent;
+    submit.disabled = true;
+    submit.textContent = "Confirming\u2026";
+    if (errorEl) errorEl.textContent = "";
+
+    try {
+      // The reference documents type "email" for a signup code. Older
+      // projects answer to "signup", so a rejected type is retried once
+      // rather than shown to the person as a failure.
+      let { data, error } = await tpClient.auth.verifyOtp({ email: pendingEmail, token, type: "email" });
+      if (error && /type|invalid/i.test(error.message || "")) {
+        ({ data, error } = await tpClient.auth.verifyOtp({ email: pendingEmail, token, type: "signup" }));
+      }
+
+      if (error) {
+        const message = (error.message || "").toLowerCase();
+        if (errorEl) {
+          // Supabase answers a wrong code and an expired one with the same
+          // message ("Token has expired or is invalid"), so neither is
+          // claimed as the cause. Saying "expired" to someone who mistyped
+          // sends them to request a code they did not need.
+          errorEl.textContent = /expired|invalid|token/.test(message)
+            ? "That code didn't work. It may have been mistyped, or it may have expired \u2014 check the email, or send a new code below."
+            : error.message;
+        }
+        submit.disabled = false;
+        submit.textContent = original;
+        input?.select();
+        return;
+      }
+
+      // Verifying a signup code signs the person in, so there is no reason
+      // to send them to the login page to type a password again.
+      if (data?.session) {
+        window.location.href = "dashboard.html";
+        return;
+      }
+      window.location.href = "login.html";
+    } catch (err) {
+      if (errorEl) errorEl.textContent = "Couldn't reach TradePulse. Check your connection and try again.";
+      submit.disabled = false;
+      submit.textContent = original;
+    }
+  });
+
+  resend?.addEventListener("click", async () => {
+    if (!pendingEmail) return;
+    resend.disabled = true;
+    if (resendStatus) {
+      resendStatus.classList.remove("is-ok");
+      resendStatus.textContent = "Sending\u2026";
+    }
+    try {
+      const { error } = await tpClient.auth.resend({ type: "signup", email: pendingEmail });
+      if (resendStatus) {
+        if (error) {
+          resendStatus.textContent = /rate|limit|seconds/i.test(error.message || "")
+            ? "A code was sent recently. Wait a minute before asking for another."
+            : error.message;
+        } else {
+          resendStatus.classList.add("is-ok");
+          resendStatus.textContent = "Sent. It can take a minute to arrive.";
+        }
+      }
+    } catch (err) {
+      if (resendStatus) resendStatus.textContent = "Couldn't reach TradePulse.";
+    } finally {
+      // Supabase rate-limits resends, so the button stays off for a while
+      // rather than inviting a burst that will be refused.
+      setTimeout(() => { resend.disabled = false; }, 60000);
+    }
+  });
+})();

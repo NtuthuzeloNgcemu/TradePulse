@@ -1,5 +1,27 @@
 # Changes
 
+## v28 (25 Oct 2026): confirming a new account with a code
+
+Signing up now asks for a six-digit code instead of only sending a link.
+
+A link has to land on a URL the Supabase project is configured to allow. That is one more thing to get wrong, and it does not work at all while the site is unhosted and running from localhost. A code works wherever the person already is.
+
+- The "check your email" screen is now a code entry, focused and ready to type, with the address it went to.
+- A correct code signs the person in and goes to the app. Making someone confirm and then type a password again is a step that exists for no reason.
+- Non-digits are stripped as they are typed, and a short code is caught before the server is asked.
+- Resend is offered, and locks for a minute afterwards because Supabase rate-limits it. A refused resend says to wait rather than showing the raw error.
+- The link in the email still works and still activates the account; the screen says so.
+
+**One setting is needed:** the Supabase "Confirm signup" email template must include `{{ .Token }}`. Without it the email has no code in it.
+
+### Said what it knows, not what it guesses
+The first version reported an unrecognised code as expired. Supabase answers a mistyped code and an expired one with the same message, so that was a guess, and a wrong one would send someone to request a code they did not need. It now says the code didn't work and names both possibilities.
+
+A project that refuses the documented OTP type is retried once with the older one rather than showing the person a failure.
+
+### Testing
+40 unit tests, 74 end-to-end checks, 29 gesture checks, 29 billing checks, 27 plan checks and 21 new sign-up checks pass.
+
 ## v27 (25 Oct 2026): three plans, with limits that are real
 
 Free, Pro and Desk. Starter is gone: free replaces it. An account with no live subscription is on Free, which is a state rather than an error.

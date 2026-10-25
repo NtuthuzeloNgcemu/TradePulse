@@ -557,3 +557,66 @@ button.forgot-link {
   line-height: 1.6;
   color: var(--ledger-ink-soft);
 }
+
+/* ---------- Confirmation code ---------- */
+.otp-form {
+  margin-block-start: 22px;
+}
+
+/* The notice around it is centred, so the label is too */
+.otp-form label,
+.otp-form .field-error {
+  text-align: center;
+}
+
+/* A code is read back character by character, so it is spaced and monospaced
+   and sized well above body text. */
+.otp-input {
+  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  text-align: center;
+  text-indent: 0.4em;
+  height: 58px;
+  font-variant-numeric: tabular-nums;
+}
+
+.otp-input::placeholder {
+  letter-spacing: 0.4em;
+  color: rgba(100, 115, 105, 0.35);
+}
+
+.auth-resend {
+  margin-block-start: 22px;
+  color: var(--ledger-muted);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.auth-resend .link-button {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--mint-strong);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.auth-resend .link-button:disabled {
+  color: var(--ledger-muted);
+  cursor: default;
+  text-decoration: none;
+}
+
+.auth-resend .form-status {
+  display: block;
+  margin-block-start: 6px;
+  color: var(--loss);
+}
+
+.auth-resend .form-status.is-ok {
+  color: var(--mint-strong);
+}

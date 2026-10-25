@@ -68,6 +68,16 @@ Anything a person can touch is animated with a spring from `motion.js`, never a 
 
 `supabase/functions/process-source` sends one file to Groq when the user asks. It needs a `GROQ_API_KEY` secret on the Supabase project (Settings > Edge Functions > Secrets). Without it, the app says AI reading isn't set up. Optional `GROQ_TEXT_MODEL` and `GROQ_VISION_MODEL` override the defaults.
 
+## Signing up
+
+A new account is confirmed with a **six-digit code**, not only a link. A link has to land on a URL the Supabase project is configured to allow, which is one more thing to get wrong and does not work at all before the site is hosted. A code works wherever the person already is.
+
+**This needs one setting.** In Supabase, go to Authentication > Emails > **Confirm signup** and make sure the template includes `{{ .Token }}`. Without it the email carries only a link and there is no code to type. The link still works and still activates the account.
+
+Entering a correct code signs the person in, so they go straight to the app rather than back to a login form. The code screen also offers a resend, which locks for a minute afterwards because Supabase rate-limits them.
+
+Supabase answers a mistyped code and an expired one with the same message, so the app does not claim to know which it was.
+
 ## Plans
 
 Three tiers. **Free** is the default: an account with no live subscription is on it, which is a state, not an error.

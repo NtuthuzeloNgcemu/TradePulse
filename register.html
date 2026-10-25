@@ -159,8 +159,34 @@
 
         <div class="auth-confirm-notice" id="confirmEmailNotice" hidden>
           <h1>Check your email</h1>
-          <p>We sent a confirmation link to <strong id="confirmEmailAddress"></strong>. Click it to activate your account, then log in below.</p>
-          <a class="button button-ink auth-submit" href="login.html">Go to log in</a>
+          <p>We sent a six-digit code to <strong id="confirmEmailAddress"></strong>. Enter it below to activate your account.</p>
+
+          <form class="auth-form otp-form" id="otpForm" novalidate>
+            <div class="field-group">
+              <label for="otpCode">Confirmation code</label>
+              <input
+                type="text"
+                id="otpCode"
+                class="otp-input"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                pattern="[0-9]{6}"
+                placeholder="000000"
+                aria-describedby="otpError"
+                required
+              />
+              <p class="field-error" id="otpError" role="alert"></p>
+            </div>
+            <button class="button button-ink auth-submit" type="submit" id="otpSubmit">Confirm and continue</button>
+          </form>
+
+          <p class="auth-resend">
+            Didn't get it? Check spam, then
+            <button class="link-button" type="button" id="otpResend">send a new code</button>.
+            <span class="form-status" id="otpResendStatus" role="status"></span>
+          </p>
+          <p class="auth-legal">The email also contains a link, which does the same thing. <a href="login.html">Go to log in</a> if you've already confirmed.</p>
         </div>
 
       </div>
